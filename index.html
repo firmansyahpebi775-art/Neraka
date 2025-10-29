@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Al-Qur'an Digital Lengkap</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Poppins", sans-serif;
+      background: #f0f8ff;
+      color: #111;
+      transition: 0.3s;
+      scroll-behavior: smooth;
+    }
+    .dark {
+      background: #0d1117;
+      color: #f5f5f5;
+    }
+    header {
+      background: #007bff;
+      color: white;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1.2em;
+    }
+    .container {
+      display: flex;
+      height: calc(100vh - 60px);
+    }
+    .sidebar {
+      width: 30%;
+      overflow-y: auto;
+      background: #f0f8ff;
+      border-right: 1px solid #ccc;
+    }
+    .dark .sidebar {
+      background: #1e1e1e;
+    }
+    .sidebar h2 {
+      text-align: center;
+      padding: 10px;
+      margin-bottom: 5px;
+    }
+    .search-box {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .search-box input {
+      width: 85%;
+      padding: 8px;
+      border: 1px solid #007bff;
+      border-radius: 8px;
+      outline: none;
+    }
+    .dark .search-box input {
+      background: #222;
+      color: white;
+      border-color: #64b5f6;
+    }
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .sidebar li {
+      padding: 10px;
+      cursor: pointer;
+      border-bottom: 1px solid #ccc;
+      transition: 0.2s;
+    }
+    .sidebar li:hover {
+      background: #007bff;
+      color: white;
+    }
+    .content {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      position: relative;
+    }
+    .ayat {
+      margin-bottom: 20px;
+      padding: 12px;
+      background: rgba(0,0,0,0.05);
+      border-radius: 10px;
+      transition: 0.3s;
+      cursor: pointer;
+    }
+    .dark .ayat {
+      background: rgba(255,255,255,0.1);
+    }
+    .ayat:hover {
+      transform: scale(1.01);
+    }
+    .arabic {
+      font-size: 1.6em;
+      text-align: right;
+      font-family: "Scheherazade", serif;
+      margin-bottom: 5px;
+    }
+    .arti {
+      font-size: 0.95em;
+      opacity: 0.9;
+    }
+    .bismillah {
+      text-align: center;
+      font-size: 1.5em;
+      margin: 20px 0;
+      font-family: "Scheherazade", serif;
+      color: #007bff;
+    }
+    .dark .bismillah {
+      color: #64b5f6;
+    }
+    .controls {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      opacity: 0.8;
+    }
+    footer {
+      text-align: center;
+      padding: 15px;
+      font-size: 0.9em;
+      color: #666;
+    }
+    .dark footer {
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span>📖 Al-Qur'an Digital Lengkap</span>
+    <button id="themeBtn">🌙 Mode Gelap</button>
+  </header>
+
+  <div class="container">
+    <div class="sidebar">
+      <h2>Daftar Surat</h2>
+      <div class="search-box">
+        <input type="text" id="searchSurah" placeholder="🔍 Cari surat...">
+      </div>
+      <ul id="surahList"></ul>
+    </div>
+
+    <div class="content">
+      <div id="surahTitle"></div>
+      <div id="ayatContainer"></div>
+      <footer>Made with ❤️ by <b>Pebi</b></footer>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="autoScrollBtn">🔽 Auto Scroll</button>
+  </div>
+
+  <script>
+    const surahList = document.getElementById("surahList");
+    const ayatContainer = document.getElementById("ayatContainer");
+    const surahTitle = document.getElementById("surahTitle");
+    const themeBtn = document.getElementById("themeBtn");
+    const autoScrollBtn = document.getElementById("autoScrollBtn");
+    const searchSurah = document.getElementById("searchSurah");
+    let allSurahs = [];
+    let autoScroll = false;
+
+    // Ambil daftar surat
+    fetch("https://api.alquran.cloud/v1/surah")
+      .then(res => res.json())
+      .then(data => {
+        allSurahs = data.data;
+        showSurahList(allSurahs);
+      });
+
+    // Tampilkan daftar surat
+    function showSurahList(surahArray) {
+      surahList.innerHTML = "";
+      surahArray.forEach(surah => {
+        const li = document.createElement("li");
+        li.textContent = `${surah.number}. ${surah.englishName} (${surah.englishNameTranslation})`;
+        li.onclick = () => loadSurah(surah.number, surah.englishName);
+        surahList.appendChild(li);
+      });
+    }
+
+    // Cari surat
+    searchSurah.addEventListener("input", e => {
+      const keyword = e.target.value.toLowerCase();
+      const filtered = allSurahs.filter(s =>
+        s.englishName.toLowerCase().includes(keyword) ||
+        s.englishNameTranslation.toLowerCase().includes(keyword)
+      );
+      showSurahList(filtered);
+    });
+
+    // Muat isi surat
+    function loadSurah(num, name) {
+      ayatContainer.innerHTML = "<p>Memuat...</p>";
+      surahTitle.innerHTML = `<h2>${num}. ${name}</h2>`;
+      fetch(`https://api.alquran.cloud/v1/surah/${num}/editions/quran-uthmani,id.indonesian`)
+        .then(res => res.json())
+        .then(data => {
+          const arab = data.data[0].ayahs;
+          const arti = data.data[1].ayahs;
+          ayatContainer.innerHTML = "";
+
+          // Tambah Bismillah di awal kecuali At-Taubah (9)
+          if (num !== 9) {
+            const bis = document.createElement("div");
+            bis.className = "bismillah";
+            bis.textContent = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ";
+            ayatContainer.appendChild(bis);
+          }
+
+          arab.forEach((a, i) => {
+            let arabicText = a.text;
+            // Hapus Bismillah dari ayat pertama agar tidak ganda
+            if (num !== 9 && i === 0 && arabicText.startsWith("بِسْمِ")) {
+              arabicText = arabicText.replace("بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ", "").trim();
+            }
+
+            const div = document.createElement("div");
+            div.className = "ayat";
+            div.innerHTML = `
+              <div class='arabic'>${arabicText}</div>
+              <div class='arti'>${arti[i].text}</div>
+            `;
+            div.onclick = () => {
+              const audio = new Audio(`https://cdn.islamic.network/quran/audio/128/ar.alafasy/${a.number}.mp3`);
+              audio.play();
+            };
+            ayatContainer.appendChild(div);
+          });
+        });
+    }
+
+    // Mode Gelap
+    themeBtn.onclick = () => {
+      document.body.classList.toggle("dark");
+      themeBtn.textContent = document.body.classList.contains("dark")
+        ? "☀️ Mode Terang"
+        : "🌙 Mode Gelap";
+    };
+
+    // Auto Scroll
+    autoScrollBtn.onclick = () => {
+      autoScroll = !autoScroll;
+      autoScrollBtn.textContent = autoScroll ? "⏸️ Stop Scroll" : "🔽 Auto Scroll";
+      if (autoScroll) startScroll();
+    };
+
+    function startScroll() {
+      if (!autoScroll) return;
+      window.scrollBy(0, 1);
+      setTimeout(startScroll, 50);
+    }
+  </script>
+</body>
+</html>
